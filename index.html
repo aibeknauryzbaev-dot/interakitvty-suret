@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Қанатсыз қыран - Интерактивті сабақ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Нүктелердің пульсациялық анимациясы */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); }
+            100% { transform: scale(0.8); box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+        
+        .hotspot {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #3b82f6; /* Көк түс */
+            border-radius: 50%;
+            cursor: pointer;
+            transform: translate(-50%, -50%);
+            animation: pulse-ring 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            border: 2px solid white;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .hotspot:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            background-color: #2563eb;
+        }
+
+        .hotspot.answered {
+            background-color: #10b981; /* Жасыл түс */
+            animation: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Сурет контейнері */
+        .image-container {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            background-color: #f3f4f6;
+            min-height: 400px; /* Сурет жүктелмей қалған жағдайға */
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* Модальды терезелердің анимациясы */
+        .modal-enter {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 300ms, transform 300ms;
+        }
+
+        /* Қате жауап анимациясы */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* Дұрыс жауап анимациясы */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pop {
+            animation: pop 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto space-y-8">
+        
+        <!-- Тақырып және мәтінді оқу батырмасы -->
+        <div class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900">Мәтін: "Қанатсыз қыран"</h1>
+                <p class="text-gray-500 mt-2">Суреттегі нүктелерді басып, сұрақтарға жауап беріңіз.</p>
+            </div>
+            <button onclick="openTextModal()" class="mt-4 md:mt-0 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold py-3 px-6 rounded-xl transition duration-200 flex items-center shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                Мәтінді оқу
+            </button>
+        </div>
+
+        <!-- Интерактивті сурет аймағы -->
+        <div class="image-container" id="game-container">
+            <!-- Бұл жерге сіздің суретіңіз қойылады. Егер сурет табылмаса, CSS арқылы фон көрінеді. -->
+            <img src="image_b93c9c.jpeg" alt="Қанатсыз қыран" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #f6d365 0%, #fda085 100%)';">
+            
+            <!-- Нүктелер JavaScript арқылы осында қосылады -->
+        </div>
+
+    </div>
+
+    <!-- Мәтінді оқуға арналған модальды терезе -->
+    <div id="textModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl modal-enter" id="textModalContent">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-xl font-bold text-gray-800">МӘТІН 2. “Қанатсыз қыран”</h3>
+                <button onclick="closeTextModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 text-gray-700 leading-relaxed space-y-4 text-lg">
+                <p>Аслан көрші ауылда тұратын атасының үйіне барғанда қабырғада ілініп тұрған үлкен суретті көрді. Суретте бір қыран биікке қарай ұшып бара жатыр, бірақ оның бір қанаты жоқ еді. Аслан суретке таңғалып, атасынан мәнін сұрады.</p>
+                <p>Атасы былай деді:</p>
+                <p>— Бұл суретті сенің әкең салған. Ол бала кезінде ауыр науқастан кейін оңалуға қиналып, ұзақ уақыт сабақтан қалып қойды. Сол кезде өз мүмкіндігін жоғалттым деп ойлаған. Бірақ бір күні дәл осындай қанаты жоқ қыранды көрген. Құстың ұшуға деген ұмтылысы оған күш берген.</p>
+                <p>Әкең содан бері бір қанат кем болса да, қайсарлық адамның жүрегінде екенін түсінді. Сол әсерден осы суретті салған еді.</p>
+                <p>Аслан ұзақ ойланып қалды. Сурет оған адамның мүмкіндігі шектеулі көрінгенімен, рухының күші әлдеқайда мықты болатынын көрсетті.</p>
+            </div>
+            <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+                <button onclick="closeTextModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition">Түсіндім, жабу</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сұраққа арналған модальды терезе -->
+    <div id="quizModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl modal-enter" id="quizModalContent">
+            <div class="bg-blue-600 p-6 text-white flex justify-between items-start">
+                <div>
+                    <span class="bg-blue-800 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide opacity-80" id="questionNumber">Сұрақ</span>
+                    <h3 class="text-xl font-bold mt-2" id="questionText">Сұрақ мәтіні осында болады?</h3>
+                </div>
+                <button onclick="closeQuizModal()" class="text-blue-200 hover:text-white transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-3" id="optionsContainer">
+                <!-- Варианттар осында қосылады -->
+            </div>
+
+            <!-- Жауап нәтижесі көрсетілетін блок -->
+            <div id="feedbackContainer" class="hidden p-4 mx-6 mb-6 rounded-lg font-medium text-center"></div>
+        </div>
+    </div>
+
+    <!-- Жеңіс хабарламасы -->
+    <div id="successMessage" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-4 rounded-xl shadow-lg transform translate-y-20 opacity-0 transition-all duration-500 z-50 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Жарайсың! Барлық сұрақтарға дұрыс жауап бердіңіз.
+    </div>
+
+    <script>
+        // Деректер массиві (Мұғалім осы жерді басқа пәндерге өзгерте алады)
+        const quizData = [
+            {
+                id: 1,
+                top: '25%', // Суреттегі Y позициясы
+                left: '30%', // Суреттегі X позициясы
+                question: 'Әкесінің сурет салуына не себеп болды?',
+                options: [
+                    'A) Өнер сыншысы болғысы келді',
+                    'B) Құстың ұшуға деген жігері оған рухани күш берді',
+                    'C) Сурет салуды үйренгісі келді',
+                    'D) Сурет салудан жарысқа қатыспақ болды'
+                ],
+                correctIndex: 1, // Дұрыс жауаптың индексі (0-ден басталады)
+                answered: false
+            },
+            {
+                id: 2,
+                top: '40%',
+                left: '60%',
+                question: 'Қыранның бір қанатының жоқ болуы нені білдіреді?',
+                options: [
+                    'A) Құс ауырып тұр',
+                    'B) Суретші дәл салмаған',
+                    'C) Шектеу бар болса да, жігер адамды биікке көтере алады',
+                    'D) Құс әлсіз болған'
+                ],
+                correctIndex: 2,
+                answered: false
+            },
+            {
+                id: 3,
+                top: '70%',
+                left: '45%',
+                question: 'Әкесінің балалық шағындағы қиындық мәтіннің қандай ойына әкеледі?',
+                options: [
+                    'A) Науқас – адамды әлсіретеді',
+                    'B) Мүмкіндік тек мықты адамдарға беріледі',
+                    'C) Қателік адамды тоқтатады',
+                    'D) Қиындықты жеңу — рухтың күші арқылы болады'
+                ],
+                correctIndex: 3,
+                answered: false
+            },
+            {
+                id: 4,
+                top: '20%',
+                left: '75%',
+                question: 'Аслан суретті көргенде неге ойланып қалды?',
+                options: [
+                    'A) Құс оның досына ұнағандықтан',
+                    'B) Өзінің сурет салғысы келмеген',
+                    'C) Адамның шектеуіне қарағанда рухы мықты екенін түсінгендіктен',
+                    'D) Атасының әңгімесі ұнамағандықтан'
+                ],
+                correctIndex: 2,
+                answered: false
+            },
+            {
+                id: 5,
+                top: '55%',
+                left: '25%',
+                question: 'Мәтіннің негізгі ойы:',
+                options: [
+                    'A) Сурет салу – ең қиын өнер',
+                    'B) Қиындықтар адамды тоқтатпайды, керісінше күшейтеді',
+                    'C) Әр адам ұшуды армандайды',
+                    'D) Құстарды қорғау керек'
+                ],
+                correctIndex: 1,
+                answered: false
+            }
+        ];
+
+        let currentQuestionId = null;
+
+        // Дыбыс шығару үшін AudioContext құру (ешқандай mp3 файл керек емес)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function playSound(type) {
+            // Аудио контекстті тек қолданушы басқан кезде ғана іске қосамыз
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                // Жағымды, жоғарылайтын дыбыс (Дұрыс)
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15); // A5
+                gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'incorrect') {
+                // Қатаң, төмендейтін дыбыс (Қате)
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.25);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.25);
+            }
+        }
+
+        // Ойынды іске қосу (Нүктелерді салу)
+        function initGame() {
+            const container = document.getElementById('game-container');
+            
+            quizData.forEach(item => {
+                const dot = document.createElement('div');
+                dot.className = 'hotspot';
+                dot.id = `hotspot-${item.id}`;
+                dot.style.top = item.top;
+                dot.style.left = item.left;
+                dot.innerText = item.id;
+                
+                dot.onclick = () => openQuizModal(item.id);
+                
+                container.appendChild(dot);
+            });
+        }
+
+        // Мәтін модалін ашу/жабу
+        function openTextModal() {
+            document.getElementById('textModal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('textModalContent').classList.add('modal-enter-active');
+            }, 10);
+        }
+
+        function closeTextModal() {
+            document.getElementById('textModalContent').classList.remove('modal-enter-active');
+            setTimeout(() => {
+                document.getElementById('textModal').classList.add('hidden');
+            }, 300);
+        }
+
+        // Сұрақ модалін ашу
+        function openQuizModal(id) {
+            currentQuestionId = id;
+            const questionData = quizData.find(q => q.id === id);
+            
+            document.getElementById('questionNumber').innerText = `${id} - СҰРАҚ`;
+            document.getElementById('questionText').innerText = questionData.question;
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            const feedbackContainer = document.getElementById('feedbackContainer');
+            feedbackContainer.classList.add('hidden');
+            feedbackContainer.className = 'hidden p-4 mx-6 mb-6 rounded-lg font-medium text-center';
+
+            questionData.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-4 rounded-xl border-2 transition-all duration-200 focus:outline-none flex items-center space-x-3
+                    ${questionData.answered && index === questionData.correctIndex 
+                        ? 'border-green-500 bg-green-50 text-green-700' 
+                        : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-700'}`;
+                
+                // Егер бұрын жауап берілсе, батырмаларды сөндіру
+                if (questionData.answered) {
+                    btn.disabled = true;
+                    if (index !== questionData.correctIndex) {
+                        btn.classList.add('opacity-50');
+                    }
+                } else {
+                    btn.onclick = () => checkAnswer(index, btn);
+                }
+
+                btn.innerHTML = `
+                    <span class="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full border-2 ${questionData.answered && index === questionData.correctIndex ? 'border-green-500 bg-green-500 text-white' : 'border-gray-300'} font-bold">
+                        ${String.fromCharCode(65 + index)}
+                    </span>
+                    <span>${opt.substring(3)}</span> <!-- "A) " бөлігін кесіп тастау -->
+                `;
+                optionsContainer.appendChild(btn);
+            });
+
+            if(questionData.answered) {
+                showFeedback(true, "Сіз бұл сұраққа дұрыс жауап бердіңіз!");
+            }
+
+            document.getElementById('quizModal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('quizModalContent').classList.add('modal-enter-active');
+            }, 10);
+        }
+
+        // Жауапты тексеру
+        function checkAnswer(selectedIndex, btnElement) {
+            const questionData = quizData.find(q => q.id === currentQuestionId);
+            const isCorrect = selectedIndex === questionData.correctIndex;
+
+            // Барлық батырмаларды сөндіру
+            const buttons = document.getElementById('optionsContainer').querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (isCorrect) {
+                playSound('correct'); // Дыбысты іске қосу
+                btnElement.classList.remove('border-gray-200', 'hover:border-blue-400', 'hover:bg-blue-50', 'text-gray-700');
+                btnElement.classList.add('pop', 'border-green-500', 'bg-green-50', 'text-green-700');
+                btnElement.querySelector('span').classList.add('bg-green-500', 'text-white', 'border-green-500');
+                
+                questionData.answered = true;
+                
+                // Суреттегі нүктені жасыл ету
+                const hotspot = document.getElementById(`hotspot-${currentQuestionId}`);
+                hotspot.classList.add('answered');
+                hotspot.innerHTML = '✓';
+
+                showFeedback(true, "Дұрыс жауап!");
+                
+                setTimeout(() => {
+                    closeQuizModal();
+                    checkWinCondition();
+                }, 1500);
+
+            } else {
+                playSound('incorrect'); // Дыбысты іске қосу
+                btnElement.classList.remove('border-gray-200', 'hover:border-blue-400', 'hover:bg-blue-50');
+                btnElement.classList.add('shake', 'border-red-500', 'bg-red-50', 'text-red-700');
+                btnElement.querySelector('span').classList.add('bg-red-500', 'text-white', 'border-red-500');
+                
+                showFeedback(false, "Қате жауап, қайтадан көріңіз!");
+                
+                // Қате болса, 1.5 секундтан соң қайта басуға рұқсат беру
+                setTimeout(() => {
+                    btnElement.classList.remove('shake', 'border-red-500', 'bg-red-50', 'text-red-700');
+                    btnElement.classList.add('border-gray-200', 'hover:border-blue-400', 'hover:bg-blue-50', 'text-gray-700');
+                    btnElement.querySelector('span').classList.remove('bg-red-500', 'text-white', 'border-red-500');
+                    buttons.forEach(btn => btn.disabled = false);
+                    document.getElementById('feedbackContainer').classList.add('hidden');
+                }, 1500);
+            }
+        }
+
+        function showFeedback(isSuccess, message) {
+            const feedback = document.getElementById('feedbackContainer');
+            feedback.innerText = message;
+            feedback.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+            
+            if (isSuccess) {
+                feedback.classList.add('bg-green-100', 'text-green-800');
+            } else {
+                feedback.classList.add('bg-red-100', 'text-red-800');
+            }
+        }
+
+        function closeQuizModal() {
+            document.getElementById('quizModalContent').classList.remove('modal-enter-active');
+            setTimeout(() => {
+                document.getElementById('quizModal').classList.add('hidden');
+            }, 300);
+        }
+
+        // Барлық сұрақтар табылғанын тексеру
+        function checkWinCondition() {
+            const allAnswered = quizData.every(q => q.answered);
+            if (allAnswered) {
+                const msg = document.getElementById('successMessage');
+                msg.classList.remove('translate-y-20', 'opacity-0');
+                
+                // 5 секундтан соң жасыру
+                setTimeout(() => {
+                    msg.classList.add('translate-y-20', 'opacity-0');
+                }, 5000);
+            }
+        }
+
+        // Бет жүктелгенде ойынды іске қосу
+        window.onload = initGame;
+    </script>
+</body>
+</html>
